@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="x-ua-compatible" content="ie=edge" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+	<title>CORS Tester</title>
+	<meta name="description" content="something" />
+	<meta name="author" content="me" />
+	<style>
+		body {
+			max-width: 50vw;
+			margin: 0 auto;
+		}
+
+		form {
+			display: flex;
+			flex-direction: column;
+		}
+
+		form>* {
+			margin: 0.5rem 0;
+		}
+
+		textarea {
+			height: 10rem;
+			font-family: monospace;
+		}
+
+		textarea:disabled {
+			background-color: #eee;
+		}
+
+		.hidden {
+			display: none;
+		}
+
+		#result {
+			background-color: #eee;
+			padding: 1rem;
+		}
+
+		pre {
+			white-space: pre-wrap;
+			word-wrap: break-word;
+		}
+	</style>
+</head>
+
+<body>
+	<form>
+		<input id="url" type="text" name="url" placeholder="your url" />
+		<select name="method" id="method">
+			<option value="GET">GET</option>
+			<option value="POST">POST</option>
+		</select>
+		<textarea name="body" id="body" disabled class="hidden"></textarea>
+		<input id="submit" type="submit" />
+	</form>
+	<div id="result">
+		<pre><code id="code">
+	</code></pre>
+	</div>
+	<script type="module">
+		//@ts-check
+		document.addEventListener("DOMContentLoaded", () => {
+			const urlInput = document.getElementById("url");
+			const submit = document.getElementById("submit");
+			const body = document.getElementById("body");
+			const method = document.getElementById("method");
+			const code = document.getElementById("code");
+			if (!method) return;
+			if (!body) return;
+			if (!urlInput) return;
+			if (!submit) return;
+			if (!code) return;
+			if (!(body instanceof HTMLTextAreaElement)) return;
+			if (!(method instanceof HTMLSelectElement)) return;
+			if (!(urlInput instanceof HTMLInputElement)) return;
+			method.addEventListener("change", (e) => {
+				if (!(e.target instanceof HTMLSelectElement)) return;
+				if (e.target.value === "POST") {
+					body.disabled = false;
+					body.classList.remove("hidden");
+				} else {
+					body.disabled = true;
+					body.classList.add("hidden");
+				}
+			});
+			body.addEventListener("input", (e) => {
+				try {
+					JSON.parse(body.value);
+				} catch (err) {
+					console.warn(err);
+
+				}
+			});
+
+			submit.addEventListener("click", (e) => {
+				let bodyJson;
+				e.preventDefault();
+				console.log(body.value);
+				console.log(typeof body.value);
+				try {
+					JSON.parse(body.value);
+				} catch (err) {
+					console.warn(err);
+					if (method.value === "POST") {
+						alert("Invalid JSON");
+						return;
+					}
+				}
+				bodyJson = method.value === "POST" ? JSON.parse(body.value) : undefined;
+				console.log(bodyJson);
+				code.innerHTML = "Loading...";
+				e.preventDefault();
+				fetch(urlInput.value, {
+					headers: {
+						"Content-Type": "application/json"
+					},
+					method: method.value,
+					body: method.value === "POST" ? body.value : undefined
+				})
+					.then((res) => {
+						if (!res.ok) {
+
+							throw new Error(res.statusText);
+						}
+						return res.text();
+					})
+					.then((data) => {
+						code.innerHTML = data;
+
+					}).catch((err) => {
+						code.innerHTML = JSON.stringify(err, null, 2);
+					});
+			});
+		});
+	</script>
+</body>
+
+</html>
